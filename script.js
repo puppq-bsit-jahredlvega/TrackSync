@@ -896,6 +896,38 @@ async function checkChallengeCompletions(logs){
   if(changed) await saveUser(STATE.currentUser);
 }
 
+// ISO-week key (e.g. "2026-W26") used so the weekly notification only
+// fires once per calendar week, separate from the rolling 7-day display total.
+function getWeekKey(d){
+  const date = new Date(d);
+  date.setHours(0,0,0,0);
+  date.setDate(date.getDate() + 3 - ((date.getDay()+6)%7));
+  const week1 = new Date(date.getFullYear(), 0, 4);
+  const weekNum = 1 + Math.round(((date - week1) / 86400000 - 3 + ((week1.getDay()+6)%7)) / 7);
+  return `${date.getFullYear()}-W${weekNum}`;
+}
+
+// Notify the member once when they hit their daily kcal goal, and once
+// per calendar week when they hit their weekly kcal goal.
+async function checkCalorieGoals(burnedToday, burnedThisWeek, dailyGoal, weeklyGoal){
+  const user = DB.users[STATE.currentUser];
+  if(!user) return;
+  let changed = false;
+  const todayKey = dateKey(new Date());
+  if(burnedToday >= dailyGoal && user.lastDailyGoalDate !== todayKey){
+    user.lastDailyGoalDate = todayKey;
+    changed = true;
+    alert(`🔥 Daily Calorie Goal Reached!\n\nYou've burned ${burnedToday.toFixed(0)} kcal today, hitting your ${dailyGoal} kcal daily goal. Nice work!`);
+  }
+  const weekKey = getWeekKey(new Date());
+  if(burnedThisWeek >= weeklyGoal && user.lastWeeklyGoalWeek !== weekKey){
+    user.lastWeeklyGoalWeek = weekKey;
+    changed = true;
+    alert(`🏆 Weekly Calorie Goal Reached!\n\nYou've burned ${burnedThisWeek.toFixed(0)} kcal this week, hitting your ${weeklyGoal} kcal weekly goal. Great consistency!`);
+  }
+  if(changed) await saveUser(STATE.currentUser);
+}
+
 function renderDashboard(){
   const user  = DB.users[STATE.currentUser];
   const plan  = DB.workoutPlans[STATE.currentUser];
@@ -911,6 +943,7 @@ function renderDashboard(){
   document.getElementById("progress-weekly-label").textContent =
     `${burnedThisWeek.toFixed(0)} / ${WEEKLY_GOAL} kcal${burnedThisWeek > WEEKLY_GOAL ? " ✓" : ""}`;
   setRing("ring-weekly", burnedThisWeek / WEEKLY_GOAL);
+  checkCalorieGoals(burnedToday, burnedThisWeek, DAILY_GOAL, WEEKLY_GOAL);
   document.getElementById("stat-streak").textContent = computeStreak(logs);
   document.getElementById("stat-weight").textContent = (user && user.weight) ? user.weight : "—";
   document.getElementById("stat-consistency").textContent = `${computeConsistency(plan, logs)}%`;
@@ -974,6 +1007,12 @@ document.getElementById("btn-save-log").onclick = async () => {
   DB.workoutLogs[STATE.currentUser].push({ type, duration, startTime, calories, date: dateKey(new Date()) });
   await saveWorkoutLogs(STATE.currentUser);
   await checkChallengeCompletions(DB.workoutLogs[STATE.currentUser]);
+  const todayKeyNow = dateKey(new Date());
+  const logsNow = DB.workoutLogs[STATE.currentUser];
+  const burnedTodayNow = logsNow.filter(l => dateKey(new Date(l.date)) === todayKeyNow).reduce((s,l) => s+(l.calories||0), 0);
+  const sevenDaysAgoNow = new Date(); sevenDaysAgoNow.setDate(sevenDaysAgoNow.getDate() - 7);
+  const burnedThisWeekNow = logsNow.filter(l => new Date(l.date) >= sevenDaysAgoNow).reduce((s,l) => s+(l.calories||0), 0);
+  await checkCalorieGoals(burnedTodayNow, burnedThisWeekNow, 300, 2500);
   alert("Workout logged!");
   showScreen("history");
 };

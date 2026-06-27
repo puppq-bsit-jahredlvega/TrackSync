@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TrackSync</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="app">
+
+  <!-- LOGIN SCREEN -->
+  <section class="screen active" id="login_screen">
+    <div class="login-bg">
+      <img class="login-logo" src="Assets/logo.png" alt="logo">
+      <h1 class="brand">TrackSync</h1>
+      <div class="card login-card">
+        <div class="role-toggle">
+          <button class="role-btn active" id="role-btn-member" onclick="setLoginRole('member')">👤 Member</button>
+          <button class="role-btn" id="role-btn-trainer" onclick="setLoginRole('trainer')">🏋️ Trainer</button>
+        </div>
+        <input type="hidden" id="login-role" value="member">
+        <input type="email" id="login-email" placeholder="Email" class="text-input">
+        <input type="password" id="login-password" placeholder="Password" class="text-input">
+        <button class="btn-primary" id="btn-login">Log In</button>
+        <button class="btn-link" id="btn-show-signup">Create a member account</button>
+        <p class="error-text" id="login-error"></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- SIGNUP SCREEN -->
+  <section class="screen" id="signup_screen">
+    <div class="login-bg">
+      <h1 class="brand">Create Account</h1>
+      <div class="card login-card">
+        <input type="text" id="signup-name" placeholder="Full Name" class="text-input">
+        <input type="email" id="signup-email" placeholder="PUP Webmail" class="text-input">
+        <input type="password" id="signup-password" placeholder="Password" class="text-input">
+        <select id="signup-sex" class="text-input">
+          <option value="">Select Sex</option>
+          <option value="M">Male</option>
+          <option value="F">Female</option>
+        </select>
+        <input type="number" id="signup-age" placeholder="Age" class="text-input">
+        <input type="number" id="signup-weight" placeholder="Weight (kg)" class="text-input">
+        <input type="number" id="signup-height" placeholder="Height (cm)" class="text-input">
+        <button class="btn-primary" id="btn-signup">Sign Up</button>
+        <button class="btn-link" id="btn-back-login">Back to Login</button>
+        <p class="error-text" id="signup-error"></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOME SCREEN -->
+  <section class="screen" id="home_screen">
+    <header class="topbar">
+      <button class="icon-btn avatar-btn" id="nav-profile">
+        <span class="avatar-initials" id="home-avatar-initials">?</span>
+      </button>
+      <h2 class="title">TrackSync</h2>
+      <div class="topbar-user-chip" id="topbar-user-chip">
+        <span class="topbar-username" id="topbar-username"></span>
+      </div>
+    </header>
+
+    <div class="calendar-card card">
+      <div class="calendar-header">
+        <button class="icon-btn" id="cal-prev">‹</button>
+        <span id="cal-month-label">Month Year</span>
+        <button class="icon-btn" id="cal-next">›</button>
+      </div>
+      <div class="calendar-grid" id="calendar-grid"></div>
+      <p class="calendar-legend"><span class="dot workout"></span> Workout day &nbsp; <span class="dot logged"></span> Logged &nbsp; <span class="dot today"></span> Today</p>
+    </div>
+
+    <div class="home-buttons">
+      <button class="tile-btn" id="nav-workout-plan">
+        <span class="tile-icon">🏋️</span>
+        <span class="tile-label">Workout Plan</span>
+      </button>
+      <button class="tile-btn" data-nav="course_screen">
+        <span class="tile-icon">📘</span>
+        <span class="tile-label">Courses</span>
+      </button>
+      <button class="tile-btn" data-nav="logger">
+        <span class="tile-icon">📝</span>
+        <span class="tile-label">Log Workout</span>
+      </button>
+      <button class="tile-btn" data-nav="history">
+        <span class="tile-icon">📜</span>
+        <span class="tile-label">History</span>
+      </button>
+      <button class="tile-btn tile-btn-center" data-nav="devlog">
+        <span class="tile-icon">📊</span>
+        <span class="tile-label">Gains Dashboard</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- PROFILE SCREEN -->
+  <section class="screen" id="profile_screen">
+    <header class="topbar">
+      <button class="icon-btn" data-nav="home_screen">←</button>
+      <h2 class="title">Profile</h2>
+      <span></span>
+    </header>
+    <div class="card profile-card">
+      <div class="profile-icon">👤</div>
+      <div class="profile-field"><label>Name</label><input class="text-input" id="profile-name"></div>
+      <div class="profile-field"><label>Email</label><input class="text-input" id="profile-email" disabled></div>
+      <div class="profile-field"><label>Sex</label>
+        <select id="profile-sex" class="text-input">
+          <option value="M">Male</option>
+          <option value="F">Female</option>
+        </select>
+      </div>
+      <div class="profile-field"><label>Age</label><input type="number" class="text-input" id="profile-age"></div>
+      <div class="profile-field"><label>Weight (kg)</label><input type="number" class="text-input" id="profile-weight" oninput="updateProfileBMI()"></div>
+      <div class="profile-field"><label>Height (cm)</label><input type="number" class="text-input" id="profile-height" oninput="updateProfileBMI()"></div>
+      <div class="bmi-display-card" id="profile-bmi-card">
+        <span class="bmi-display-label">BMI</span>
+        <span class="bmi-display-value" id="profile-bmi-value">—</span>
+        <span class="bmi-display-cat" id="profile-bmi-cat"></span>
+      </div>
+      <button class="btn-primary" id="btn-save-profile">Save Changes</button>
+      <button class="btn-secondary" id="btn-reset-data">Reset All Data</button>
+      <button class="btn-logout" id="btn-logout">⎋ Log Out</button>
+    </div>
+  </section>
+
+  <!-- WORKOUT PLANNER SCREEN -->
+  <section class="screen" id="workout">
+    <header class="topbar">
+      <button class="icon-btn" data-nav="home_screen">←</button>
+      <h2 class="title">Workout Planner</h2>
+      <span></span>
+    </header>
+
+    <!-- Recommended plan banner (shown when trainer has assigned a plan) -->
+    <div id="recommended-plan-banner" class="recommended-plan-banner hidden">
+      <div class="rec-plan-header">
+        <span class="rec-plan-icon">🏋️</span>
+        <div>
+          <div class="rec-plan-title">Recommended by Your Trainer</div>
+          <div class="rec-plan-sub" id="rec-plan-sub"></div>
+        </div>
+        <button class="rec-plan-view-btn" id="btn-view-rec-plan">View Plan ›</button>
+      </div>
+    </div>
+
+    <!-- Recommended plan detail modal -->
+    <div id="rec-plan-detail" class="rec-plan-detail hidden">
+      <div class="rec-plan-detail-inner card">
+        <h3 class="section-title" style="margin-top:0">📋 Trainer's Assigned Plan</h3>
+        <div id="rec-plan-detail-content"></div>
+        <div class="button-row" style="margin-top:16px">
+          <button class="btn-primary" id="btn-apply-rec-plan">✅ Use This Plan</button>
+          <button class="btn-secondary" id="btn-close-rec-plan">Close</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <p class="bmi-label" id="bmi-label">BMI: Calculating...</p>
+      <h3 class="section-title">Fitness Goal</h3>
+      <div class="goal-row">
+        <button class="goal-btn" data-goal="Lose Weight">⚖️ Lose Weight</button>
+        <button class="goal-btn" data-goal="Build Muscle">🏋️ Build Muscle</button>
+        <button class="goal-btn" data-goal="Stay Fit">🏃 Stay Fit</button>
+      </div>
+
+      <p class="field-label" id="duration-label">Daily Duration: 30 mins</p>
+      <input type="range" min="10" max="120" step="5" value="30" id="duration-slider" class="slider">
+
+      <p class="field-label" id="calories-label">Estimated Calories: Calculating...</p>
+
+      <h3 class="section-title">Workout Days</h3>
+      <div class="day-grid" id="day-grid"></div>
+
+      <div class="reminder-row">
+        <span class="field-label">Enable Reminder</span>
+        <label class="switch">
+          <input type="checkbox" id="reminder-toggle">
+          <span class="slider-toggle"></span>
+        </label>
+      </div>
+      <button class="btn-secondary" id="reminder-time-btn" disabled>Select Reminder Time</button>
+      <input type="time" id="reminder-time-input" class="text-input hidden">
+
+      <div class="button-row">
+        <button class="btn-primary" id="btn-save-plan">Save Workout Plan</button>
+        <button class="btn-secondary" data-nav="home_screen">Back to Home</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- PLAN SUMMARY SCREEN -->
+  <section class="screen" id="summary">
+    <header class="topbar">
+      <button class="icon-btn" data-nav="home_screen">←</button>
+      <h2 class="title">Plan Summary</h2>
+      <span></span>
+    </header>
+    <div class="card" id="summary-card">
+      <p>No workout plan saved yet.</p>
+    </div>
+    <div class="button-row">
+      <button class="btn-secondary" id="btn-edit-plan">Edit Plan</button>
+      <button class="btn-secondary" id="btn-cancel-plan">Cancel Plan</button>
+    </div>
+  </section>
+
+  <!-- WORKOUT LOGGER SCREEN -->
+  <section class="screen" id="logger">
+    <header class="topbar">
+      <button class="icon-btn" data-nav="home_screen">←</button>
+      <h2 class="title">Log Workout</h2>
+      <span></span>
+    </header>
+    <div class="card">
+      <div class="profile-field"><label>Workout Type</label>
+        <select id="log-type" class="text-input">
+          <option>Running</option>
+          <option>Cycling</option>
+          <option>Weightlifting</option>
+          <option>Yoga</option>
+          <option>Swimming</option>
+          <option>Other</option>
+        </select>
+      </div>
+      <div class="profile-field"><label>Duration (mins)</label><input type="number" class="text-input" id="log-duration" value="30"></div>
+      <div class="profile-field"><label>Start Time</label><input type="time" class="text-input" id="log-start-time"></div>
+      <button class="btn-primary" id="btn-save-log">Save Log</button>
+    </div>
+  </section>
+
+  <!-- WORKOUT HISTORY SCREEN -->
+  <section class="screen" id="history">
+    <header class="topbar">
+      <button class="icon-btn" data-nav="home_screen">←</button>
+      <h2 class="title">Workout History</h2>
+      <span></span>
+    </header>
+    <button class="btn-secondary" id="btn-clear-history">🗑️ Clear History</button>
+    <div class="card" id="history-list">
+      <p>No logged workouts yet.</p>
+    </div>
+  </section>
+
+  <!-- COURSE PAGE SCREEN -->
+  <section class="screen" id="course_screen">
+    <header class="topbar">
+      <button class="icon-btn" id="course-back-btn" data-nav="home_screen">←</button>
+      <h2 class="title">Courses</h2>
+      <span></span>
+    </header>
+    <div class="tabs" id="course-tabs"></div>
+    <div class="card" id="course-content"></div>
+  </section>
+
+  <!-- GAINS DASHBOARD SCREEN (formerly Dev Log / Progress) -->
+  <section class="screen" id="devlog">
+    <header class="topbar">
+      <button class="icon-btn" data-nav="home_screen">←</button>
+      <h2 class="title">Gains Dashboard</h2>
+      <span></span>
+    </header>
+
+    <div class="progress-grid">
+      <div class="card progress-box">
+        <svg viewBox="0 0 120 120" class="ring"><circle cx="60" cy="60" r="50" class="ring-bg"/><circle cx="60" cy="60" r="50" class="ring-fg" id="ring-daily"/></svg>
+        <p id="progress-daily-label">0 / 0 kcal</p>
+        <span class="field-label">Daily Calories Burned</span>
+      </div>
+      <div class="card progress-box">
+        <svg viewBox="0 0 120 120" class="ring"><circle cx="60" cy="60" r="50" class="ring-bg"/><circle cx="60" cy="60" r="50" class="ring-fg" id="ring-weekly"/></svg>
+        <p id="progress-weekly-label">0 / 0 kcal</p>
+        <span class="field-label">Weekly Calories Burned</span>
+      </div>
+    </div>
+
+    <div class="card stat-row">
+      <div class="stat-box">
+        <div class="stat-value" id="stat-streak">0</div>
+        <div class="stat-label">Day Streak 🔥</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-value" id="stat-weight">—</div>
+        <div class="stat-label">Body Weight (kg)</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-value" id="stat-consistency">0%</div>
+        <div class="stat-label">Consistency</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 class="section-title" style="margin-top:0">Recent Workouts</h3>
+      <div id="recent-workouts-list"><p>No logged workouts yet.</p></div>
+    </div>
+
+    <div class="card" id="dashboard-challenges-card">
+      <h3 class="section-title" style="margin-top:0">🏆 Active Gym Challenges</h3>
+      <div id="dashboard-challenges"><p style="color:var(--muted);font-size:13px">No active challenges from your trainer yet.</p></div>
+    </div>
+  </section>
+
+  <!-- TRAINER HOME SCREEN -->
+  <section class="screen" id="trainer_home">
+    <header class="topbar">
+      <button class="icon-btn avatar-btn avatar-btn-sm" id="nav-coach-profile" onclick="showScreen('coach_profile')">
+        <span class="avatar-initials" id="trainer-avatar-initials">T</span>
+      </button>
+      <h2 class="title">Trainer Panel</h2>
+      <div class="trainer-topbar-right">
+        <span class="topbar-username" id="trainer-topbar-name" style="max-width:120px;font-size:14px;color:var(--maroon-bright);font-weight:800;text-align:right"></span>
+      </div>
+    </header>
+    <div class="card" style="text-align:center;padding:20px 18px">
+      <p class="brand" style="font-size:20px;margin:0 0 4px">Welcome, Coach 💪</p>
+      <p style="color:var(--muted);font-size:13px;margin:0">TrackSync — Trainer Dashboard</p>
+    </div>
+    <div class="home-buttons">
+      <button class="tile-btn" data-nav="trainer_members">
+        <span class="tile-icon">👥</span>
+        <span class="tile-label">Members<br><span id="trainer-member-count" style="color:var(--maroon-bright);font-size:18px;font-family:'Barlow Condensed',sans-serif">0</span></span>
+      </button>
+      <button class="tile-btn" data-nav="trainer_progress">
+        <span class="tile-icon">📊</span>
+        <span class="tile-label">Progress Overview</span>
+      </button>
+      <button class="tile-btn" data-nav="trainer_challenges">
+        <span class="tile-icon">🏆</span>
+        <span class="tile-label">Gym Challenges<br><span id="trainer-challenge-count" style="color:var(--gold);font-size:18px;font-family:'Barlow Condensed',sans-serif">0</span></span>
+      </button>
+      <button class="tile-btn" data-nav="course_screen">
+        <span class="tile-icon">📘</span>
+        <span class="tile-label">Course Library</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- TRAINER MEMBERS SCREEN -->
+  <section class="screen" id="trainer_members">
+    <header class="topbar">
+      <button class="icon-btn" data-nav="trainer_home">←</button>
+      <h2 class="title">Members</h2>
+      <span></span>
+    </header>
+    <div class="card" id="trainer-members-list">
+      <p style="color:var(--muted)">Loading...</p>
+    </div>
+    <p style="color:var(--muted);font-size:12px;text-align:center">Tap a member to assign a plan or leave feedback.</p>
+  </section>
+
+  <!-- TRAINER ASSIGN PLAN / FEEDBACK SCREEN -->
+  <section class="screen" id="trainer_assign">
+    <header class="topbar">
+      <button class="icon-btn" data-nav="trainer_members">←</button>
+      <h2 class="title" id="trainer-assign-title">Member</h2>
+      <span></span>
+    </header>
+    <p style="color:var(--muted);font-size:12px;text-align:center;margin-top:-8px" id="trainer-assign-email"></p>
+
+    <div class="card">
+      <h3 class="section-title" style="margin-top:0">Assign Workout Plan</h3>
+      <div class="profile-field">
+        <label>Fitness Goal</label>
+        <select id="ta-goal" class="text-input">
+          <option value="Lose Weight">⚖️ Lose Weight</option>
+          <option value="Build Muscle">🏋️ Build Muscle</option>
+          <option value="Stay Fit">🏃 Stay Fit</option>
+        </select>
+      </div>
+      <div class="profile-field">
+        <label>Daily Duration (mins)</label>
+        <input type="number" id="ta-duration" class="text-input" value="30" min="10" max="120">
+      </div>
+      <div class="profile-field">
+        <label>Workout Days</label>
+        <div class="day-grid" id="ta-day-grid"></div>
+      </div>
+      <div class="profile-field">
+        <label>Workout Time</label>
+        <input type="time" id="ta-time" class="text-input">
+      </div>
+      <div class="profile-field">
+        <label>Trainer Notes / Instructions</label>
+        <textarea id="ta-notes" class="text-input" rows="3" placeholder="e.g. Focus on form, increase weight weekly..."></textarea>
+      </div>
+      <button class="btn-primary" id="btn-ta-save-plan">💾 Save Assigned Plan</button>
+      <button class="btn-logout" id="btn-ta-delete-plan" style="display:none;margin-top:8px">🗑️ Delete Assigned Plan</button>
+    </div>
+
+    <div class="card">
+      <h3 class="section-title" style="margin-top:0">Leave Feedback</h3>
+      <textarea id="ta-feedback-input" class="text-input" rows="2" placeholder="e.g. Good form on deadlift! Try increasing reps next session."></textarea>
+      <button class="btn-secondary" id="btn-ta-add-feedback">➕ Add Feedback</button>
+      <div style="margin-top:12px" id="ta-feedback-list"></div>
+    </div>
+
+    <div class="card">
+      <h3 class="section-title" style="margin-top:0">Recent Workouts (Last 5)</h3>
+      <div id="ta-member-logs"></div>
+    </div>
+  </section>
+
+  <!-- TRAINER PROGRESS OVERVIEW SCREEN -->
+  <section class="screen" id="trainer_progress">
+    <header class="topbar">
+      <button class="icon-btn" data-nav="trainer_home">←</button>
+      <h2 class="title">Progress Overview</h2>
+      <span></span>
+    </header>
+    <p style="color:var(--muted);font-size:12px;text-align:center;margin-bottom:8px">Tap a member to see their full dashboard</p>
+    <div class="card" id="trainer-progress-list">
+      <p style="color:var(--muted)">Loading...</p>
+    </div>
+  </section>
+
+  <!-- TRAINER MEMBER DETAIL SCREEN -->
+  <section class="screen" id="trainer_member_detail">
+    <header class="topbar">
+      <button class="icon-btn" data-nav="trainer_progress">←</button>
+      <h2 class="title" id="detail-member-name">Member</h2>
+      <span></span>
+    </header>
+    <p style="color:var(--muted);font-size:12px;text-align:center;margin-top:-12px;margin-bottom:8px" id="detail-member-email"></p>
+
+    <!-- Stats row -->
+    <div class="card stat-row">
+      <div class="stat-box">
+        <div class="stat-value" id="detail-streak" style="color:var(--gold)">0</div>
+        <div class="stat-label">Streak 🔥</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-value" id="detail-consistency">0%</div>
+        <div class="stat-label">Consistency</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-value" id="detail-total-logs">0</div>
+        <div class="stat-label">Total Logs</div>
+      </div>
+    </div>
+
+    <div class="card stat-row">
+      <div class="stat-box">
+        <div class="stat-value" id="detail-weight">—</div>
+        <div class="stat-label">Weight (kg)</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-value" id="detail-bmi">—</div>
+        <div class="stat-label">BMI</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-value" id="detail-week-kcal">0</div>
+        <div class="stat-label">Week kcal</div>
+      </div>
+    </div>
+
+    <!-- Weekly ring + label -->
+    <div class="card progress-box" style="flex-direction:row;gap:16px;align-items:center;padding:18px">
+      <svg viewBox="0 0 120 120" class="ring" style="width:90px;height:90px;flex-shrink:0">
+        <circle cx="60" cy="60" r="50" class="ring-bg"/>
+        <circle cx="60" cy="60" r="50" class="ring-fg" id="detail-ring-weekly"/>
+      </svg>
+      <div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:800;color:var(--text)" id="detail-weekly-label">0 / 0 kcal</div>
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Weekly Calories Burned</div>
+      </div>
+    </div>
+
+    <!-- 7-day breakdown -->
+    <div class="card">
+      <h3 class="section-title" style="margin-top:0">7-Day Breakdown</h3>
+      <div id="detail-week-breakdown"></div>
+    </div>
+
+    <!-- Assigned plan -->
+    <div class="card">
+      <h3 class="section-title" style="margin-top:0">Assigned Plan</h3>
+      <div id="detail-plan-info"></div>
+    </div>
+
+    <!-- Trainer feedback -->
+    <div class="card">
+      <h3 class="section-title" style="margin-top:0">Trainer Feedback</h3>
+      <div id="detail-feedback"></div>
+    </div>
+
+    <!-- Full workout history -->
+    <div class="card">
+      <h3 class="section-title" style="margin-top:0">Full Workout History</h3>
+      <div id="detail-history"></div>
+    </div>
+  </section>
+
+  <!-- TRAINER GYM CHALLENGES SCREEN -->
+  <section class="screen" id="trainer_challenges">
+    <header class="topbar">
+      <button class="icon-btn" data-nav="trainer_home">←</button>
+      <h2 class="title">Gym Challenges</h2>
+      <span></span>
+    </header>
+    <div class="card">
+      <h3 class="section-title" style="margin-top:0">Create Challenge</h3>
+      <div class="profile-field">
+        <label>Challenge Title</label>
+        <input type="text" id="ch-title" class="text-input" placeholder="e.g. 30-Day Plank Challenge">
+      </div>
+      <div class="profile-field">
+        <label>Description</label>
+        <textarea id="ch-desc" class="text-input" rows="3" placeholder="What members need to do, rules, prizes..."></textarea>
+      </div>
+      <div class="profile-field">
+        <label>Deadline (optional)</label>
+        <input type="date" id="ch-deadline" class="text-input">
+      </div>
+      <button class="btn-primary" id="btn-add-challenge">🏆 Post Challenge</button>
+    </div>
+    <div class="card" id="trainer-challenges-list">
+      <p style="color:var(--muted)">No challenges yet.</p>
+    </div>
+  </section>
+
+  <!-- COACH PROFILE SCREEN -->
+  <section class="screen" id="coach_profile">
+    <header class="topbar">
+      <button class="icon-btn" onclick="showScreen('trainer_home')">←</button>
+      <h2 class="title">Coach Profile</h2>
+      <span></span>
+    </header>
+    <div class="card profile-card">
+      <div class="profile-icon" style="background:linear-gradient(135deg,#1a3a4a,#1e5a7a);border-color:#3a7a9a;font-size:28px">🏋️</div>
+      <div class="profile-field"><label>Name</label><input class="text-input" id="coach-profile-name"></div>
+      <div class="profile-field"><label>Email</label><input class="text-input" id="coach-profile-email" disabled></div>
+      <div class="profile-field"><label>Role</label><input class="text-input" value="Trainer / Coach" disabled></div>
+      <div class="profile-field"><label>Weight (kg)</label><input type="number" class="text-input" id="coach-profile-weight" oninput="updateCoachBMI()"></div>
+      <div class="profile-field"><label>Height (cm)</label><input type="number" class="text-input" id="coach-profile-height" oninput="updateCoachBMI()"></div>
+      <div class="bmi-display-card" id="coach-bmi-card">
+        <span class="bmi-display-label">BMI</span>
+        <span class="bmi-display-value" id="coach-bmi-value">—</span>
+        <span class="bmi-display-cat" id="coach-bmi-cat"></span>
+      </div>
+      <button class="btn-primary" id="btn-save-coach-profile">Save Changes</button>
+      <button class="btn-logout" id="btn-coach-logout" style="margin-top:12px">⎋ Log Out</button>
+    </div>
+  </section>
+
+</div>
+
+<!-- Firebase CDN -->
+<script type="module" src="script.js"></script>
+</body>
+</html>

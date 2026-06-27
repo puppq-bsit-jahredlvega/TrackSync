@@ -141,7 +141,15 @@ function reRenderActive(){
   if(!active) return;
   const id = active.id;
   if(id === "home_screen")           { renderCalendar(); updateTopbarName(); }
-  if(id === "workout")               { renderWorkoutScreen(); }
+  if(id === "workout"){
+    if(DB.workoutPlans[STATE.currentUser]){
+      active.classList.remove("active");
+      document.getElementById("summary").classList.add("active");
+      renderSummary();
+    } else {
+      renderWorkoutScreen();
+    }
+  }
   if(id === "summary")               { renderSummary(); }
   if(id === "history")               { renderHistory(); }
   if(id === "profile_screen")        { renderProfile(); }
@@ -345,7 +353,16 @@ function showScreen(id){
   document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
   document.getElementById(id).classList.add("active");
   if(id === "home_screen"){ renderCalendar(); updateTopbarName(); }
-  if(id === "workout") renderWorkoutScreen();
+  if(id === "workout"){
+    if(DB.workoutPlans[STATE.currentUser]){
+      // Already has a plan — show the summary instead of the create-plan form.
+      document.getElementById(id).classList.remove("active");
+      document.getElementById("summary").classList.add("active");
+      renderSummary();
+    } else {
+      renderWorkoutScreen();
+    }
+  }
   if(id === "summary") renderSummary();
   if(id === "history") renderHistory();
   if(id === "profile_screen") renderProfile();
@@ -742,7 +759,19 @@ function renderSummary(){
     <p><strong>Start Date:</strong> ${plan.startDate}</p>
   `;
 }
-document.getElementById("btn-edit-plan").onclick = () => showScreen("workout");
+document.getElementById("btn-edit-plan").onclick = () => {
+  const plan = DB.workoutPlans[STATE.currentUser];
+  if(plan){
+    STATE.goal           = plan.goal || "Select Goal";
+    STATE.duration        = plan.duration || 30;
+    STATE.selectedDays    = [...(plan.days || [])];
+    STATE.reminderEnabled = !!plan.reminderTime;
+    STATE.reminderTime    = plan.reminderTime || null;
+  }
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  document.getElementById("workout").classList.add("active");
+  renderWorkoutScreen();
+};
 document.getElementById("btn-cancel-plan").onclick = async () => {
   delete DB.workoutPlans[STATE.currentUser];
   await saveWorkoutPlan(STATE.currentUser);

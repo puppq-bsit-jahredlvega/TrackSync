@@ -515,6 +515,22 @@
         <textarea id="ch-desc" class="text-input" rows="3" placeholder="What members need to do, rules, prizes..."></textarea>
       </div>
       <div class="profile-field">
+        <label>Required Workout Type</label>
+        <select id="ch-workout-type" class="text-input">
+          <option value="Any">Any workout type</option>
+          <option value="Running">Running</option>
+          <option value="Cycling">Cycling</option>
+          <option value="Weightlifting">Weightlifting</option>
+          <option value="Yoga">Yoga</option>
+          <option value="Swimming">Swimming</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+      <div class="profile-field">
+        <label>Duration (days member must log the workout)</label>
+        <input type="number" id="ch-duration-days" class="text-input" min="1" value="30">
+      </div>
+      <div class="profile-field">
         <label>Deadline (optional)</label>
         <input type="date" id="ch-deadline" class="text-input">
       </div>

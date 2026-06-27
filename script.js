@@ -868,6 +868,34 @@ function computeConsistency(plan, logs){
   );
   return Math.min(Math.round((recentLoggedDays.size / plan.days.length) * 100), 100);
 }
+function computeChallengeProgress(ch, logs){
+  const target = ch.durationDays || 30;
+  const matchLogs = logs.filter(l => !ch.workoutType || ch.workoutType === "Any" || l.type === ch.workoutType);
+  const daysLogged = new Set(matchLogs.map(l => dateKey(new Date(l.date))));
+  const count = Math.min(daysLogged.size, target);
+  return { count, target, achieved: daysLogged.size >= target };
+}
+
+// Detect newly-completed challenges for the current user and show a
+// one-time completion message, then remember it so it doesn't pop up again.
+async function checkChallengeCompletions(logs){
+  const user = DB.users[STATE.currentUser];
+  if(!user) return;
+  if(!user.completedChallenges) user.completedChallenges = [];
+  let changed = false;
+  for(const ch of DB.gymChallenges){
+    const chId = ch.id != null ? ch.id : ch.title; // fallback for older challenges without id
+    if(user.completedChallenges.includes(chId)) continue;
+    const prog = computeChallengeProgress(ch, logs);
+    if(prog.achieved){
+      user.completedChallenges.push(chId);
+      changed = true;
+      alert(`🎉 Challenge Complete!\n\nYou finished "${ch.title}" by logging your ${ch.workoutType === "Any" || !ch.workoutType ? "workouts" : ch.workoutType.toLowerCase()} for ${prog.target} day(s). Great work!`);
+    }
+  }
+  if(changed) await saveUser(STATE.currentUser);
+}
+
 function renderDashboard(){
   const user  = DB.users[STATE.currentUser];
   const plan  = DB.workoutPlans[STATE.currentUser];
@@ -909,16 +937,24 @@ function renderDashboard(){
       const deadline = ch.deadline ? new Date(ch.deadline) : null;
       const isExpired = deadline && deadline < today;
       const daysLeft = deadline ? Math.ceil((deadline - today) / (1000*60*60*24)) : null;
+      const prog = computeChallengeProgress(ch, logs);
+      const user = DB.users[STATE.currentUser];
+      const chId = ch.id != null ? ch.id : ch.title;
+      const isCompleted = prog.achieved || (user && user.completedChallenges && user.completedChallenges.includes(chId));
       const div = document.createElement("div");
-      div.className = "challenge-event" + (isExpired ? " expired" : "");
+      div.className = "challenge-event" + (isExpired ? " expired" : "") + (isCompleted ? " completed" : "");
       div.innerHTML = `
         <div class="challenge-event-title">🏆 ${ch.title}</div>
         <div class="challenge-event-desc">${ch.desc}</div>
         <div class="challenge-event-meta">By ${ch.createdBy}${deadline ? ` · ${isExpired ? "⚠️ Ended" : `⏳ ${daysLeft}d left`} (${ch.deadline})` : " · No deadline"}</div>
+        <div class="challenge-event-meta">Goal: ${ch.workoutType||"Any"} workout · ${prog.target} day(s)</div>
+        <div class="challenge-progress-bar"><div class="challenge-progress-fill" style="width:${Math.min((prog.count/prog.target)*100,100)}%"></div></div>
+        <div class="challenge-event-meta">${isCompleted ? "✅ Completed!" : `${prog.count}/${prog.target} days logged`}</div>
       `;
       challengesEl.appendChild(div);
     });
   }
+  checkChallengeCompletions(logs);
 }
 
 // ══════════════════════════════════════════════
@@ -937,6 +973,7 @@ document.getElementById("btn-save-log").onclick = async () => {
   if(!DB.workoutLogs[STATE.currentUser]) DB.workoutLogs[STATE.currentUser] = [];
   DB.workoutLogs[STATE.currentUser].push({ type, duration, startTime, calories, date: dateKey(new Date()) });
   await saveWorkoutLogs(STATE.currentUser);
+  await checkChallengeCompletions(DB.workoutLogs[STATE.currentUser]);
   alert("Workout logged!");
   showScreen("history");
 };
@@ -1408,6 +1445,7 @@ function renderTrainerChallenges(){
     div.innerHTML = `
       <strong>${ch.title}</strong>
       <span class="meta">Deadline: ${ch.deadline||"Open"} &nbsp;·&nbsp; By: ${ch.createdBy}</span>
+      <span class="meta">Goal: ${ch.workoutType||"Any"} workout, ${ch.durationDays||30} day(s) logged</span>
       <p style="margin:6px 0 0;font-size:13px;color:var(--text)">${ch.desc}</p>
       <button class="btn-secondary" style="margin-top:8px;padding:6px 12px;font-size:12px" onclick="deleteChallenge(${DB.gymChallenges.length - 1 - i})">🗑️ Delete</button>
     `;
@@ -1424,15 +1462,24 @@ async function deleteChallenge(idx){
 window.deleteChallenge = deleteChallenge;
 
 document.getElementById("btn-add-challenge").onclick = async () => {
-  const title    = document.getElementById("ch-title").value.trim();
-  const desc     = document.getElementById("ch-desc").value.trim();
-  const deadline = document.getElementById("ch-deadline").value;
+  const title       = document.getElementById("ch-title").value.trim();
+  const desc        = document.getElementById("ch-desc").value.trim();
+  const deadline    = document.getElementById("ch-deadline").value;
+  const workoutType = document.getElementById("ch-workout-type").value;
+  const durationDays = parseInt(document.getElementById("ch-duration-days").value, 10) || 30;
   if(!title || !desc){ alert("Please fill in the title and description."); return; }
   const trainer = DB.trainers[STATE.currentUser];
-  DB.gymChallenges.push({ title, desc, deadline, createdBy: trainer ? trainer.name : STATE.currentUser, date: new Date().toLocaleDateString() });
-  document.getElementById("ch-title").value    = "";
-  document.getElementById("ch-desc").value     = "";
-  document.getElementById("ch-deadline").value = "";
+  DB.gymChallenges.push({
+    id: Date.now(),
+    title, desc, deadline, workoutType, durationDays,
+    createdBy: trainer ? trainer.name : STATE.currentUser,
+    date: new Date().toLocaleDateString()
+  });
+  document.getElementById("ch-title").value        = "";
+  document.getElementById("ch-desc").value         = "";
+  document.getElementById("ch-deadline").value     = "";
+  document.getElementById("ch-workout-type").value = "Any";
+  document.getElementById("ch-duration-days").value = "30";
   await saveGymChallenges();
   renderTrainerChallenges();
 };

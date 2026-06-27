@@ -1409,6 +1409,59 @@ document.getElementById("btn-add-challenge").onclick = async () => {
 };
 
 // ══════════════════════════════════════════════
+//  DESKTOP SCROLL SUPPORT FOR .tabs ROWS
+//  (mobile gets touch-drag for free; desktop needs
+//   wheel + click-drag since there's no touch gesture)
+// ══════════════════════════════════════════════
+(function enableDesktopTabsScroll(){
+  // Vertical wheel → horizontal scroll, while hovering a .tabs row
+  document.addEventListener("wheel", (e) => {
+    const tabs = e.target.closest(".tabs");
+    if(!tabs) return;
+    if(tabs.scrollWidth <= tabs.clientWidth) return; // nothing to scroll
+    if(Math.abs(e.deltaY) > Math.abs(e.deltaX)){
+      e.preventDefault();
+      tabs.scrollLeft += e.deltaY;
+    }
+  }, { passive: false });
+
+  // Click-and-drag scrolling
+  let dragTarget = null, startX = 0, startScroll = 0, dragged = false;
+
+  document.addEventListener("mousedown", (e) => {
+    const tabs = e.target.closest(".tabs");
+    if(!tabs) return;
+    dragTarget = tabs;
+    startX = e.pageX;
+    startScroll = tabs.scrollLeft;
+    dragged = false;
+    tabs.classList.add("dragging");
+  });
+
+  document.addEventListener("mousemove", (e) => {
+    if(!dragTarget) return;
+    const dx = e.pageX - startX;
+    if(Math.abs(dx) > 4) dragged = true;
+    dragTarget.scrollLeft = startScroll - dx;
+  });
+
+  document.addEventListener("mouseup", () => {
+    if(dragTarget) dragTarget.classList.remove("dragging");
+    dragTarget = null;
+  });
+
+  // If a real drag happened, swallow the click so it doesn't trigger
+  // the tab's onclick (prevents accidentally switching category after dragging)
+  document.addEventListener("click", (e) => {
+    if(dragged && e.target.closest(".tabs")){
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    dragged = false;
+  }, true);
+})();
+
+// ══════════════════════════════════════════════
 //  KICK OFF
 // ══════════════════════════════════════════════
 bootstrap();

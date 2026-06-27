@@ -513,12 +513,20 @@ input[type=range].slider::-moz-range-thumb{
 /* ── TABS (Courses) ── */
 .tabs{
   display: flex;
+  flex-wrap: nowrap;
   overflow-x: auto;
+  overflow-y: hidden;
   gap: 6px;
   margin-bottom: 12px;
   padding-bottom: 4px;
   scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  max-width: 100%;
+  cursor: grab;
+  user-select: none;
 }
+.tabs.dragging{ cursor: grabbing; scroll-behavior: auto; }
 .tabs::-webkit-scrollbar{ display:none; }
 .tab-btn{
   flex: 0 0 auto;

@@ -239,14 +239,14 @@ async function bootstrap(){
     // Seed default trainer if collection is empty
     const trainerSnap = await getDocs(collection(db, "trainers"));
     if(trainerSnap.empty){
-      await fsSet("trainers", emailToId("trainer@pup.edu.ph"), {
+      await fsSet("trainers", emailToId("trainer@demo.com"), {
         password: "trainer123", name: "Coach Rivera", role: "trainer"
       });
     }
     // Seed demo user if users collection is empty
     const usersSnap = await getDocs(collection(db, "users"));
     if(usersSnap.empty){
-      await fsSet("users", emailToId("demo@iskolarngbayan.pup.edu.ph"), {
+      await fsSet("users", emailToId("demoacc@demo.com"), {
         password: "demo123", name: "Demo User", sex: "M",
         age: 21, weight: 65, height: 172, role: "member"
       });

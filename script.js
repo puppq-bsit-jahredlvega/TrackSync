@@ -928,11 +928,37 @@ async function checkCalorieGoals(burnedToday, burnedThisWeek, dailyGoal, weeklyG
   if(changed) await saveUser(STATE.currentUser);
 }
 
+// Derive {daily, weekly} calorie goals from a member's active plan.
+// Falls back to recomputing from duration/goal/profile if the stored
+// plan is missing the fields or has a stale/zero value, and only uses
+// the flat 300/2500 default when there's truly no plan at all.
+function getCalorieGoals(plan, user){
+  const DEFAULT_DAILY = 300, DEFAULT_WEEKLY = 2500;
+  if(!plan) return { daily: DEFAULT_DAILY, weekly: DEFAULT_WEEKLY };
+  let daily = Number(plan.dailyCalories);
+  if(!Number.isFinite(daily) || daily <= 0){
+    if(user && user.weight && user.height && user.sex){
+      daily = calculateCalories(plan.duration||30, user.weight, user.height, user.sex, user.age||30, plan.goal||"Stay Fit");
+    } else {
+      daily = 0;
+    }
+  }
+  const dayCount = (plan.days||[]).length || 7;
+  let weekly = Number(plan.weeklyCalories);
+  if(!Number.isFinite(weekly) || weekly <= 0){
+    weekly = daily * dayCount;
+  }
+  return {
+    daily:  daily  > 0 ? daily  : DEFAULT_DAILY,
+    weekly: weekly > 0 ? weekly : DEFAULT_WEEKLY
+  };
+}
+
 function renderDashboard(){
   const user  = DB.users[STATE.currentUser];
   const plan  = DB.workoutPlans[STATE.currentUser];
   const logs  = DB.workoutLogs[STATE.currentUser] || [];
-  const DAILY_GOAL = 300, WEEKLY_GOAL = 2500;
+  const { daily: DAILY_GOAL, weekly: WEEKLY_GOAL } = getCalorieGoals(plan, user);
   const todayKey = dateKey(new Date());
   const burnedToday = logs.filter(l => dateKey(new Date(l.date)) === todayKey).reduce((s,l) => s+(l.calories||0), 0);
   document.getElementById("progress-daily-label").textContent =
@@ -1012,7 +1038,8 @@ document.getElementById("btn-save-log").onclick = async () => {
   const burnedTodayNow = logsNow.filter(l => dateKey(new Date(l.date)) === todayKeyNow).reduce((s,l) => s+(l.calories||0), 0);
   const sevenDaysAgoNow = new Date(); sevenDaysAgoNow.setDate(sevenDaysAgoNow.getDate() - 7);
   const burnedThisWeekNow = logsNow.filter(l => new Date(l.date) >= sevenDaysAgoNow).reduce((s,l) => s+(l.calories||0), 0);
-  await checkCalorieGoals(burnedTodayNow, burnedThisWeekNow, 300, 2500);
+  const goalsNow = getCalorieGoals(DB.workoutPlans[STATE.currentUser], user);
+  await checkCalorieGoals(burnedTodayNow, burnedThisWeekNow, goalsNow.daily, goalsNow.weekly);
   alert("Workout logged!");
   showScreen("history");
 };
@@ -1406,7 +1433,7 @@ function renderMemberDetail(){
   const consistency = computeConsistency(plan, logs);
   const sevenDaysAgo = new Date(); sevenDaysAgo.setDate(sevenDaysAgo.getDate()-7);
   const weekBurned  = logs.filter(l => new Date(l.date) >= sevenDaysAgo).reduce((s,l) => s+(l.calories||0), 0);
-  const WEEKLY_GOAL = 2500;
+  const WEEKLY_GOAL = getCalorieGoals(DB.workoutPlans[email], user).weekly;
   document.getElementById("detail-streak").textContent      = streak;
   document.getElementById("detail-consistency").textContent = consistency + "%";
   document.getElementById("detail-week-kcal").textContent   = weekBurned.toFixed(0);
